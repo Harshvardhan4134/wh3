@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  color: #1E88E5;
+  font-weight: 700;
+  font-size: 2.2rem;
+}
+
+h2 {
+  color: #333;
+  font-weight: 600;
+  font-size: 1.8rem;
+}
+
+h3 {
+  color: #444;
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+/* Card styling */
+.dashboard-card {
+  @apply bg-white rounded-lg p-6 shadow-card transition-transform duration-200;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Metric cards */
+.metric-card {
+  @apply bg-white rounded-lg p-5 shadow-card h-full relative;
+}
+
+.metric-card-icon {
+  @apply w-10 h-10 rounded-lg flex items-center justify-center mr-4;
+}
+
+.metric-card-title {
+  @apply text-lightGray text-sm;
+}
+
+.metric-card-value {
+  @apply text-2xl font-semibold mt-1;
+}
+
+/* Status indicators */
+.positive-indicator {
+  @apply text-success font-semibold flex items-center;
+}
+
+.negative-indicator {
+  @apply text-error font-semibold flex items-center;
+}
+
+/* Sidebar styling */
+.sidebar {
+  @apply bg-darkBlue text-white h-screen w-64 fixed left-0 top-0 z-10 flex flex-col;
+}
+
+.sidebar-nav-item {
+  @apply px-4 py-3 my-1 rounded-md text-gray-300 transition-colors;
+}
+
+.sidebar-nav-item.active {
+  @apply bg-opacity-10 bg-white text-white font-semibold;
+}
+
+.sidebar-nav-item:hover {
+  @apply bg-opacity-5 bg-white;
+}
+
+/* Main content area */
+.main-content {
+  @apply ml-64 p-6;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a5a5a5;
+}

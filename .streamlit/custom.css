@@ -1,0 +1,156 @@
+/* Main Page Styling */
+.main {
+    background-color: #f8f9fa;
+    padding: 0 !important;
+}
+
+/* Title styling */
+h1 {
+    color: #1E88E5 !important;
+    font-weight: 700 !important;
+    font-size: 2.2rem !important;
+}
+
+h2 {
+    color: #333 !important;
+    font-weight: 600 !important;
+    font-size: 1.8rem !important;
+}
+
+h3 {
+    color: #444 !important;
+    font-weight: 600 !important;
+    font-size: 1.5rem !important;
+}
+
+/* Card styling */
+div.stMetric {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-left: 4px solid #1E88E5;
+    transition: transform 0.2s ease;
+}
+
+div.stMetric:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Positive metrics */
+div.css-1xarl3l.e16fv1kl1 {
+    color: #38b000 !important;
+}
+
+/* Negative metrics */
+div.css-1offfwp.e16fv1kl1 {
+    color: #e5383b !important;
+}
+
+/* Plotly chart styling */
+div.js-plotly-plot {
+    border-radius: 10px;
+    background-color: white;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Dataframe styling */
+div.stDataFrame {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Sidebar styling */
+section[data-testid="stSidebar"] {
+    background-color: #1E3A8A;
+    padding-top: 2rem;
+}
+
+section[data-testid="stSidebar"] .css-6qob1r.e1fqkh3o3 {
+    color: white !important;
+}
+
+section[data-testid="stSidebar"] .css-pkbazv.e1fqkh3o5 {
+    color: #ced4da !important;
+}
+
+/* Custom expander styling */
+.streamlit-expanderHeader {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Custom button styling */
+button[kind="primary"] {
+    background-color: #1E88E5;
+    border-radius: 8px;
+}
+
+button[kind="primary"]:hover {
+    background-color: #1976D2;
+}
+
+/* Custom tabs */
+button[data-baseweb="tab"] {
+    color: #495057;
+    font-weight: 600;
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: #1E88E5;
+    border-bottom-color: #1E88E5;
+}
+
+/* Selectbox styling */
+div[data-baseweb="select"] {
+    border-radius: 8px;
+}
+
+/* Custom container classes */
+.dashboard-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Make the content fill the screen height */
+div[data-testid="stVerticalBlock"] {
+    gap: 1rem;
+}
+
+/* Status indicators - positive */
+.positive-indicator {
+    color: #38b000;
+    font-weight: 600;
+}
+
+/* Status indicators - negative */
+.negative-indicator {
+    color: #e5383b;
+    font-weight: 600;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c5c5c5;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a5a5a5;
+}

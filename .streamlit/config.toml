@@ -1,0 +1,24 @@
+[server]
+headless = true
+address = "0.0.0.0"
+port = 5000
+
+[theme]
+primaryColor = "#1E88E5"
+backgroundColor = "#f8f9fa"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#262730"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[ui]
+hideTopBar = true
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = true
+
+[runner]
+fastReruns = true
