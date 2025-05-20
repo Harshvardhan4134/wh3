@@ -271,7 +271,9 @@ def load_year_data(year):
     top_overruns = []
     for i in range(15):  # Generate 15 top overruns
         job_number = f"J{year[-2:]}-{random.randint(1000, 9999)}"
+        sales_document = f"5000{random.randint(100000, 999999)}"
         part_name = f"Part-{random.choice(['A', 'B', 'C', 'D', 'E'])}{random.randint(100, 999)}"
+        description = f"{part_name} - {random.choice(['Assembly', 'Cast', 'Machined', 'Welded', 'Fabricated'])} {random.choice(['Component', 'Assembly', 'Housing', 'Manifold', 'Cylinder'])}"
         work_center = random.choice(["Assembly", "Machining", "Welding", "Inspection", "CNC", "Testing"])
         task_description = random.choice([
             "Final Assembly", "Surface Finishing", "Quality Inspection",
@@ -285,7 +287,9 @@ def load_year_data(year):
         
         top_overruns.append({
             "job_number": job_number,
+            "sales_document": sales_document,
             "part_name": part_name,
+            "description": description,
             "work_center": work_center,
             "task_description": task_description,
             "planned_hours": planned_hours,
@@ -301,12 +305,14 @@ def load_year_data(year):
     ncr_summary = []
     for i in range(10):  # Generate 10 NCR instances
         part_name = f"Part-{random.choice(['N', 'M', 'K', 'L'])}{random.randint(100, 999)}"
+        description = f"{part_name} - {random.choice(['Assembly', 'Cast', 'Machined', 'Welded', 'Fabricated'])} {random.choice(['Component', 'Assembly', 'Housing', 'Manifold', 'Cylinder'])}"
         
         total_ncr_hours = random.uniform(2, 30)
         ncr_occurrences = random.randint(1, 4)
         
         ncr_summary.append({
             "part_name": part_name,
+            "description": description,
             "total_ncr_hours": total_ncr_hours,
             "total_ncr_cost": total_ncr_hours * hourly_rate,
             "ncr_occurrences": ncr_occurrences
@@ -354,12 +360,14 @@ def load_year_data(year):
     repeat_ncr_failures = []
     for i in range(6):  # Generate 6 repeat NCR instances
         part_name = f"Part-{random.choice(['R', 'P', 'Q'])}{random.randint(100, 999)}"
+        description = f"{part_name} - {random.choice(['Assembly', 'Cast', 'Machined', 'Welded', 'Fabricated'])} {random.choice(['Component', 'Assembly', 'Housing', 'Manifold', 'Cylinder'])}"
         
         repeat_ncr_hours = random.uniform(5, 20)
         ncr_job_count = random.randint(2, 4)
         
         repeat_ncr_failures.append({
             "part_name": part_name,
+            "description": description,
             "repeat_ncr_hours": repeat_ncr_hours,
             "ncr_job_count": ncr_job_count
         })
