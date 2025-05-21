@@ -1,6 +1,15 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
+// Constants
+export const BURDEN_RATE = 184; // $184 per hour
+export const NCR_CATEGORIES = {
+  SCRAP: 'scrap',
+  REWORK: 'rework',
+  REPAIR: 'repair',
+  OTHER: 'other'
+};
+
 // Create context
 const DataContext = createContext();
 
@@ -29,6 +38,39 @@ export const DataProvider = ({ children }) => {
     metricDetail: true
   });
   
+  // Calculate ghost hours and costs
+  const calculateGhostHours = (planned, actual) => {
+    if (planned > 0 && actual === 0) {
+      return {
+        hours: planned,
+        cost: planned * BURDEN_RATE
+      };
+    }
+    return { hours: 0, cost: 0 };
+  };
+
+  // Calculate unplanned actual hours
+  const calculateUnplannedHours = (planned, actual) => {
+    if (planned === 0 && actual > 0) {
+      return {
+        hours: actual,
+        cost: actual * BURDEN_RATE
+      };
+    }
+    return { hours: 0, cost: 0 };
+  };
+
+  // Calculate NCR costs by category
+  const calculateNCRCosts = (ncrData) => {
+    return {
+      [NCR_CATEGORIES.SCRAP]: ncrData.scrap_hours * BURDEN_RATE,
+      [NCR_CATEGORIES.REWORK]: ncrData.rework_hours * BURDEN_RATE,
+      [NCR_CATEGORIES.REPAIR]: ncrData.repair_hours * BURDEN_RATE,
+      [NCR_CATEGORIES.OTHER]: ncrData.other_hours * BURDEN_RATE,
+      total: (ncrData.scrap_hours + ncrData.rework_hours + ncrData.repair_hours + ncrData.other_hours) * BURDEN_RATE
+    };
+  };
+  
   // Load dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -40,19 +82,42 @@ export const DataProvider = ({ children }) => {
         const customersResponse = await axios.get('/api/customer_profitability');
         const workcentersResponse = await axios.get('/api/workcenter_trends');
         
-        setYearlySummary(yearsResponse.data);
-        setSummaryMetrics(metricsResponse.data);
+        // Process the data to include new metrics
+        const processedYearlySummary = yearsResponse.data.map(year => ({
+          ...year,
+          ghost_hours: calculateGhostHours(year.planned_hours, year.actual_hours).hours,
+          ghost_hours_cost: calculateGhostHours(year.planned_hours, year.actual_hours).cost,
+          unplanned_hours: calculateUnplannedHours(year.planned_hours, year.actual_hours).hours,
+          unplanned_hours_cost: calculateUnplannedHours(year.planned_hours, year.actual_hours).cost,
+          ncr_costs: calculateNCRCosts(year.ncr_data || {
+            scrap_hours: 0,
+            rework_hours: 0,
+            repair_hours: 0,
+            other_hours: 0
+          })
+        }));
+
+        const processedMetrics = {
+          ...metricsResponse.data,
+          burden_rate: BURDEN_RATE,
+          total_ghost_hours: processedYearlySummary.reduce((sum, year) => sum + year.ghost_hours, 0),
+          total_ghost_hours_cost: processedYearlySummary.reduce((sum, year) => sum + year.ghost_hours_cost, 0),
+          total_unplanned_hours: processedYearlySummary.reduce((sum, year) => sum + year.unplanned_hours, 0),
+          total_unplanned_hours_cost: processedYearlySummary.reduce((sum, year) => sum + year.unplanned_hours_cost, 0)
+        };
+        
+        setYearlySummary(processedYearlySummary);
+        setSummaryMetrics(processedMetrics);
         setCustomerData(customersResponse.data);
         setWorkcenterData(workcentersResponse.data);
         
         // Set the most recent year as default selected year
-        if (yearsResponse.data && yearsResponse.data.length > 0) {
-          const sortedYears = [...yearsResponse.data].sort((a, b) => b.year - a.year);
+        if (processedYearlySummary.length > 0) {
+          const sortedYears = [...processedYearlySummary].sort((a, b) => b.year - a.year);
           setSelectedYear(parseInt(sortedYears[0].year));
         }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
-        // Show error message to user
         setYearlySummary([]);
         setSummaryMetrics(null);
         setCustomerData(null);
@@ -155,10 +220,17 @@ export const DataProvider = ({ children }) => {
     // Loading states
     loading,
     
+    // Constants
+    BURDEN_RATE,
+    NCR_CATEGORIES,
+    
     // Utility functions
     formatNumber,
     formatMoney,
-    formatPercent
+    formatPercent,
+    calculateGhostHours,
+    calculateUnplannedHours,
+    calculateNCRCosts
   };
   
   return (

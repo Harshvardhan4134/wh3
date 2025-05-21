@@ -82,11 +82,70 @@ const Dashboard = () => {
             iconColor="#e5383b" 
           />
           <MetricCard 
-            title="NCR Hours" 
+            title="Ghost Hours" 
+            value={formatNumber(summaryMetrics.total_ghost_hours)} 
+            icon="👻" 
+            iconColor="#6c757d"
+            helpText="Planned time with no recorded work"
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <MetricCard 
+            title="Unplanned Hours" 
+            value={formatNumber(summaryMetrics.total_unplanned_hours)} 
+            icon="❓" 
+            iconColor="#ff9800"
+            helpText="Actual time with no planning"
+          />
+          <MetricCard 
+            title="Ghost Hours Cost" 
+            value={formatMoney(summaryMetrics.total_ghost_hours_cost)} 
+            icon="💰" 
+            iconColor="#6c757d"
+          />
+          <MetricCard 
+            title="Unplanned Hours Cost" 
+            value={formatMoney(summaryMetrics.total_unplanned_hours_cost)} 
+            icon="💵" 
+            iconColor="#ff9800"
+          />
+          <MetricCard 
+            title="Total NCR Hours" 
             value={formatNumber(summaryMetrics.total_ncr_hours)} 
             icon="⚙️" 
             iconColor="#FFA000" 
-            helpText="Total hours for NCR work center operations"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <MetricCard 
+            title="Scrap Cost" 
+            value={formatMoney(summaryMetrics.total_ncr_costs.scrap)} 
+            icon="🗑️" 
+            iconColor="#d32f2f"
+            helpText="Cost of scrapped parts"
+          />
+          <MetricCard 
+            title="Rework Cost" 
+            value={formatMoney(summaryMetrics.total_ncr_costs.rework)} 
+            icon="🔄" 
+            iconColor="#f57c00"
+            helpText="Cost of rework operations"
+          />
+          <MetricCard 
+            title="Repair Cost" 
+            value={formatMoney(summaryMetrics.total_ncr_costs.repair)} 
+            icon="🔧" 
+            iconColor="#f57c00"
+            helpText="Cost of repair operations"
+          />
+          <MetricCard 
+            title="Other NCR Cost" 
+            value={formatMoney(summaryMetrics.total_ncr_costs.other)} 
+            icon="📝" 
+            iconColor="#f57c00"
+            helpText="Other NCR-related costs"
           />
         </div>
         
@@ -104,10 +163,10 @@ const Dashboard = () => {
             iconColor="#2E7D32" 
           />
           <MetricCard 
-            title="Overrun Cost" 
-            value={formatMoney(summaryMetrics.total_actual_cost - summaryMetrics.total_planned_cost)} 
-            icon="📉" 
-            iconColor="#C62828" 
+            title="Total NCR Cost" 
+            value={formatMoney(summaryMetrics.total_ncr_costs.total)} 
+            icon="⚙️" 
+            iconColor="#FFA000"
           />
           <MetricCard 
             title="Total Jobs" 

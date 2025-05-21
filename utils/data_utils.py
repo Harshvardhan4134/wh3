@@ -8,6 +8,15 @@ import os
 import random
 import streamlit as st
 
+# Constants
+BURDEN_RATE = 184  # $184 per hour
+NCR_CATEGORIES = {
+    'SCRAP': 'scrap',
+    'REWORK': 'rework',
+    'REPAIR': 'repair',
+    'OTHER': 'other'
+}
+
 def generate_customer_data(customers, total_value):
     """Helper function to generate customer data with list_name support"""
     customer_data = []
@@ -143,6 +152,65 @@ def load_excel_data():
     print("WARNING: Returning empty DataFrame as Excel file could not be found or loaded")
     return pd.DataFrame()
 
+def calculate_ghost_hours(planned, actual):
+    """Calculate ghost hours where planned > 0 but actual = 0."""
+    if planned > 0 and actual == 0:
+        return {
+            'hours': planned,
+            'cost': planned * BURDEN_RATE
+        }
+    return {'hours': 0, 'cost': 0}
+
+def calculate_unplanned_hours(planned, actual):
+    """Calculate unplanned hours where planned = 0 but actual > 0."""
+    if planned == 0 and actual > 0:
+        return {
+            'hours': actual,
+            'cost': actual * BURDEN_RATE
+        }
+    return {'hours': 0, 'cost': 0}
+
+def categorize_ncr_hours(ncr_df):
+    """Categorize NCR hours based on task description keywords."""
+    categories = {
+        'scrap': 0,  # Changed from scrap_hours
+        'rework': 0,  # Changed from rework_hours
+        'repair': 0,  # Changed from repair_hours
+        'other': 0   # Changed from other_hours
+    }
+    
+    if ncr_df.empty:
+        return categories
+        
+    # Convert task_description to string and lowercase for matching
+    ncr_df['task_description'] = ncr_df['task_description'].astype(str).str.lower()
+    
+    # Define keyword patterns for each category
+    patterns = {
+        'scrap': ['scrap', 'scrapped', 'discard', 'throw away', 'reject'],
+        'rework': ['rework', 'redo', 'repeat', 'remake'],
+        'repair': ['repair', 'fix', 'correct', 'modify', 'adjust']
+    }
+    
+    # Categorize each NCR record
+    for _, row in ncr_df.iterrows():
+        task_desc = row['task_description']
+        hours = row['actual_hours']
+        
+        # Check each category's patterns
+        categorized = False
+        for category, keywords in patterns.items():
+            if any(keyword in task_desc for keyword in keywords):
+                categories[category] += hours
+                categorized = True
+                break
+        
+        # If no category matched, add to other
+        if not categorized:
+            categories['other'] += hours
+    
+    return categories
+
 def load_yearly_summary():
     """Load yearly breakdown data from the Excel file."""
     # Load Excel file
@@ -150,7 +218,7 @@ def load_yearly_summary():
     
     if df.empty:
         print("No data found in Excel file")
-        return pd.DataFrame()  # Return empty DataFrame instead of empty list
+        return pd.DataFrame()
     
     # Get unique years from operation_finish_date
     years = sorted(df['operation_finish_date'].dt.year.unique().tolist())
@@ -165,9 +233,21 @@ def load_yearly_summary():
         actual_hours = year_df['actual_hours'].sum()
         overrun_hours = actual_hours - planned_hours
         
-        # Count NCR work
+        # Calculate ghost hours and unplanned hours
+        ghost_hours_data = calculate_ghost_hours(planned_hours, actual_hours)
+        unplanned_hours_data = calculate_unplanned_hours(planned_hours, actual_hours)
+        
+        # Count NCR work by category using task descriptions
         ncr_df = year_df[year_df['work_center'] == 'NCR']
-        ncr_hours = ncr_df['actual_hours'].sum() if not ncr_df.empty else 0
+        ncr_data = categorize_ncr_hours(ncr_df)
+        total_ncr_hours = sum(ncr_data.values())
+        
+        # Calculate NCR costs using the same category names
+        ncr_costs = {
+            category: hours * BURDEN_RATE
+            for category, hours in ncr_data.items()
+        }
+        ncr_costs['total'] = total_ncr_hours * BURDEN_RATE
         
         # Count jobs and operations
         job_count = len(year_df['job_number'].unique())
@@ -181,13 +261,18 @@ def load_yearly_summary():
             "planned_hours": planned_hours,
             "actual_hours": actual_hours,
             "overrun_hours": overrun_hours,
-            "ncr_hours": ncr_hours,
+            "ghost_hours": ghost_hours_data['hours'],
+            "ghost_hours_cost": ghost_hours_data['cost'],
+            "unplanned_hours": unplanned_hours_data['hours'],
+            "unplanned_hours_cost": unplanned_hours_data['cost'],
+            "ncr_data": ncr_data,
+            "ncr_costs": ncr_costs,
+            "total_ncr_hours": total_ncr_hours,
             "job_count": job_count,
             "operation_count": operation_count,
             "customer_count": customer_count
         })
     
-    # Convert list of dictionaries to DataFrame
     return pd.DataFrame(data)
 
 def load_top_overruns():
@@ -249,27 +334,52 @@ def load_summary_metrics():
             "total_planned_hours": 0,
             "total_actual_hours": 0,
             "total_overrun_hours": 0,
+            "total_ghost_hours": 0,
+            "total_ghost_hours_cost": 0,
+            "total_unplanned_hours": 0,
+            "total_unplanned_hours_cost": 0,
             "total_ncr_hours": 0,
+            "total_ncr_costs": {
+                NCR_CATEGORIES['SCRAP']: 0,
+                NCR_CATEGORIES['REWORK']: 0,
+                NCR_CATEGORIES['REPAIR']: 0,
+                NCR_CATEGORIES['OTHER']: 0,
+                'total': 0
+            },
             "total_planned_cost": 0,
             "total_actual_cost": 0,
             "overrun_percent": 0,
             "total_jobs": 0,
             "total_operations": 0,
-            "total_customers": 0
+            "total_customers": 0,
+            "burden_rate": BURDEN_RATE
         }
     
+    # Calculate totals
     total_planned_hours = yearly_data['planned_hours'].sum()
     total_actual_hours = yearly_data['actual_hours'].sum()
     total_overrun_hours = yearly_data['overrun_hours'].sum()
-    total_ncr_hours = yearly_data['ncr_hours'].sum()
+    total_ghost_hours = yearly_data['ghost_hours'].sum()
+    total_ghost_hours_cost = yearly_data['ghost_hours_cost'].sum()
+    total_unplanned_hours = yearly_data['unplanned_hours'].sum()
+    total_unplanned_hours_cost = yearly_data['unplanned_hours_cost'].sum()
+    total_ncr_hours = yearly_data['total_ncr_hours'].sum()
     total_jobs = yearly_data['job_count'].sum()
     total_operations = yearly_data['operation_count'].sum()
-    total_customers = yearly_data['customer_count'].max() if not yearly_data.empty else 0
+    total_customers = yearly_data['customer_count'].max()
     
-    # Calculate costs (assuming $199/hour as mentioned in notes)
-    hourly_rate = 199
-    total_planned_cost = total_planned_hours * hourly_rate
-    total_actual_cost = total_actual_hours * hourly_rate
+    # Calculate NCR costs by category
+    total_ncr_costs = {
+        NCR_CATEGORIES['SCRAP']: yearly_data['ncr_costs'].apply(lambda x: x[NCR_CATEGORIES['SCRAP']]).sum(),
+        NCR_CATEGORIES['REWORK']: yearly_data['ncr_costs'].apply(lambda x: x[NCR_CATEGORIES['REWORK']]).sum(),
+        NCR_CATEGORIES['REPAIR']: yearly_data['ncr_costs'].apply(lambda x: x[NCR_CATEGORIES['REPAIR']]).sum(),
+        NCR_CATEGORIES['OTHER']: yearly_data['ncr_costs'].apply(lambda x: x[NCR_CATEGORIES['OTHER']]).sum(),
+        'total': yearly_data['ncr_costs'].apply(lambda x: x['total']).sum()
+    }
+    
+    # Calculate costs using burden rate
+    total_planned_cost = total_planned_hours * BURDEN_RATE
+    total_actual_cost = total_actual_hours * BURDEN_RATE
     
     # Calculate overrun percent
     overrun_percent = (total_overrun_hours / total_planned_hours * 100) if total_planned_hours > 0 else 0
@@ -278,13 +388,19 @@ def load_summary_metrics():
         "total_planned_hours": total_planned_hours,
         "total_actual_hours": total_actual_hours,
         "total_overrun_hours": total_overrun_hours,
+        "total_ghost_hours": total_ghost_hours,
+        "total_ghost_hours_cost": total_ghost_hours_cost,
+        "total_unplanned_hours": total_unplanned_hours,
+        "total_unplanned_hours_cost": total_unplanned_hours_cost,
         "total_ncr_hours": total_ncr_hours,
+        "total_ncr_costs": total_ncr_costs,
         "total_planned_cost": total_planned_cost,
         "total_actual_cost": total_actual_cost,
         "overrun_percent": overrun_percent,
         "total_jobs": total_jobs,
         "total_operations": total_operations,
-        "total_customers": total_customers
+        "total_customers": total_customers,
+        "burden_rate": BURDEN_RATE
     }
 
 def load_customer_profitability():
@@ -539,8 +655,9 @@ def load_year_data(year):
         overrun_percent = (overrun_hours / planned_hours * 100) if planned_hours > 0 else 0
         recommended_buffer = min(overrun_percent * 1.2, 30)  # Cap at 30%
         
-        # Generate ghost hours (planned hours with no recorded work)
-        ghost_hours = planned_hours * random.uniform(0.02, 0.08)
+        # Calculate ghost hours and unplanned hours
+        ghost_hours_data = calculate_ghost_hours(planned_hours, actual_hours)
+        unplanned_hours_data = calculate_unplanned_hours(planned_hours, actual_hours)
         
         # Calculate total unique parts (roughly 20-40% of operations)
         unique_parts = int(operation_count * random.uniform(0.2, 0.4))
@@ -757,7 +874,10 @@ def load_year_data(year):
             "total_planned_hours": planned_hours,
             "total_actual_hours": actual_hours,
             "total_overrun_hours": overrun_hours,
-            "ghost_hours": ghost_hours,
+            "ghost_hours": ghost_hours_data['hours'],
+            "ghost_hours_cost": ghost_hours_data['cost'],
+            "unplanned_hours": unplanned_hours_data['hours'],
+            "unplanned_hours_cost": unplanned_hours_data['cost'],
             "total_ncr_hours": ncr_hours,
             "total_planned_cost": planned_cost,
             "total_actual_cost": actual_cost,

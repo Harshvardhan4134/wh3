@@ -278,11 +278,64 @@ const YearlyAnalysis = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <MetricCard 
-            title="NCR Hours" 
+            title="Unplanned Hours" 
+            value={formatNumber(yearData.summary.unplanned_hours)} 
+            icon="❓" 
+            iconColor="#ff9800"
+            helpText="Actual time with no planning"
+          />
+          <MetricCard 
+            title="Ghost Hours Cost" 
+            value={formatMoney(yearData.summary.ghost_hours_cost)} 
+            icon="💰" 
+            iconColor="#6c757d"
+          />
+          <MetricCard 
+            title="Unplanned Hours Cost" 
+            value={formatMoney(yearData.summary.unplanned_hours_cost)} 
+            icon="💵" 
+            iconColor="#ff9800"
+          />
+          <MetricCard 
+            title="Total NCR Hours" 
             value={formatNumber(yearData.summary.total_ncr_hours)} 
             icon="⚙️" 
             iconColor="#FFA000" 
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <MetricCard 
+            title="Scrap Cost" 
+            value={formatMoney(yearData.summary.ncr_costs.scrap)} 
+            icon="🗑️" 
+            iconColor="#d32f2f"
+            helpText="Cost of scrapped parts"
+          />
+          <MetricCard 
+            title="Rework Cost" 
+            value={formatMoney(yearData.summary.ncr_costs.rework)} 
+            icon="🔄" 
+            iconColor="#f57c00"
+            helpText="Cost of rework operations"
+          />
+          <MetricCard 
+            title="Repair Cost" 
+            value={formatMoney(yearData.summary.ncr_costs.repair)} 
+            icon="🔧" 
+            iconColor="#f57c00"
+            helpText="Cost of repair operations"
+          />
+          <MetricCard 
+            title="Other NCR Cost" 
+            value={formatMoney(yearData.summary.ncr_costs.other)} 
+            icon="📝" 
+            iconColor="#f57c00"
+            helpText="Other NCR-related costs"
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard 
             title="Planned Cost" 
             value={formatMoney(yearData.summary.total_planned_cost)} 
@@ -296,34 +349,15 @@ const YearlyAnalysis = () => {
             iconColor="#2E7D32" 
           />
           <MetricCard 
-            title="Opportunity Cost" 
-            value={formatMoney(yearData.summary.opportunity_cost_dollars)} 
-            icon="📉" 
-            iconColor="#C62828" 
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard 
-            title="Suggested Buffer" 
-            value={formatPercent(yearData.summary.recommended_buffer_percent/100)} 
-            icon="📊" 
-            iconColor="#673AB7" 
+            title="Total NCR Cost" 
+            value={formatMoney(yearData.summary.ncr_costs.total)} 
+            icon="⚙️" 
+            iconColor="#FFA000"
           />
           <MetricCard 
             title="Total Jobs" 
             value={formatNumber(yearData.summary.total_jobs, 0)} 
             icon="🔧" 
-          />
-          <MetricCard 
-            title="Total Operations" 
-            value={formatNumber(yearData.summary.total_operations, 0)} 
-            icon="🏗️" 
-          />
-          <MetricCard 
-            title="Unique Parts" 
-            value={formatNumber(yearData.summary.total_unique_parts, 0)} 
-            icon="🔩" 
           />
         </div>
       </div>
