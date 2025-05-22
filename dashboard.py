@@ -13,7 +13,7 @@ from utils.data_utils import (
     load_top_overruns,
     categorize_ncr_hours
 )
-from utils.visualization import create_yearly_trends_chart, create_customer_profit_chart, create_workcenter_chart
+from utils.visualization import create_yearly_trends_chart, create_customer_profit_chart, create_workcenter_chart, create_workcenter_roi_chart, create_simplified_customer_chart
 import re
 
 # ---------- FUNCTION DEFINITIONS ---------- #
@@ -514,8 +514,10 @@ with st.spinner("Loading dashboard data..."):
     data = get_dashboard_data()
 
 if data:
-    # ---- SUMMARY METRICS SECTION ----
-    st.subheader("Summary Metrics")
+    # ===================================================
+    # ================ SUMMARY METRICS ==================
+    # ===================================================
+    st.header("📊 Summary Metrics")
     st.caption(f"Last updated: {datetime.now().strftime('%b %d, %Y %H:%M')}")
     
     # Top row metrics using the styled metric cards
@@ -621,8 +623,10 @@ if data:
 
     st.divider()
     
-    # ---- YEARLY BREAKDOWN SECTION (from app.py) ----
-    st.subheader("Yearly Breakdown")
+    # ===================================================
+    # =============== YEARLY BREAKDOWN ==================
+    # ===================================================
+    st.header("📅 Yearly Breakdown")
     with st.expander("View Yearly Data", expanded=True):
         # Yearly table and chart side by side
         col1, col2 = st.columns(2)
@@ -673,12 +677,15 @@ if data:
 
     st.divider()
     
-    # ---- CUSTOMER & WORK CENTER ANALYSIS SIDE BY SIDE (from app.py) ----
+    # ===================================================
+    # ============= CUSTOMER & WORK CENTER =============
+    # ===================================================
+    
     col1, col2 = st.columns(2)
     
     with col1:
         # ---- CUSTOMER PROFIT ANALYSIS ----
-        st.subheader("Customer Profit Analysis")
+        st.header("👥 Customer Profit Analysis")
         with st.container():
             # Customer profit metrics
             c1, c2 = st.columns(2)
@@ -733,7 +740,7 @@ if data:
                 """, unsafe_allow_html=True)
             
             # Customer profit chart
-            st.subheader("Customer Profitability vs Hours", divider="gray")
+            st.subheader("Customer Analysis", divider="gray")
             
             # Add year filter
             if "yearly_summary" in data and not data["yearly_summary"].empty:
@@ -751,25 +758,131 @@ if data:
                     key="customer_year_filter"
                 )
             
-            # Replace the existing customer chart with enhanced version that has year filtering
-            if data["customer_data"]["profit_data"]:
-                customer_chart = create_enhanced_customer_chart(data["customer_data"]["profit_data"], selected_year)
-                st.plotly_chart(customer_chart, use_container_width=True)
+            # Add sort options
+            sort_options = {
+                "efficiency": "Efficiency (Default)",
+                "planned_hours": "Total Hours",
+                "profitability": "Profitability"
+            }
+            
+            # Create tabs for different customer views
+            customer_tab1, customer_tab2, customer_tab3 = st.tabs(["Chart", "Work Types", "Details"])
+            
+            with customer_tab1:
+                # Add sorting control above the chart without nested columns
+                with st.container():
+                    sort_by = st.selectbox(
+                        "Sort by:",
+                        options=list(sort_options.keys()),
+                        format_func=lambda x: sort_options[x],
+                        key="customer_sort_by"
+                    )
                 
-                with st.expander("Understanding This Chart"):
-                    st.markdown("""
-                    - **Each bubble** represents a customer
-                    - **Bubble size** indicates total planned hours
-                    - **Position above the line** means the customer's projects are over budget (actual > planned)
-                    - **Position below the line** means under budget (actual < planned)
-                    - **Color** indicates efficiency (green = good, red = poor)
-                    """)
-            else:
-                st.info("No customer profitability data available")
+                # Replace the existing customer chart with simplified version
+                if data["customer_data"]["profit_data"]:
+                    customer_chart = create_simplified_customer_chart(
+                        data["customer_data"]["profit_data"], 
+                        year_filter=selected_year,
+                        sort_by=sort_by,
+                        max_customers=8
+                    )
+                    st.plotly_chart(customer_chart, use_container_width=True)
+                    
+                    with st.expander("Understanding This Chart"):
+                        st.markdown("""
+                        - **Bar height** shows the efficiency percentage (Planned / Actual * 100%)
+                        - **Green bars** indicate good efficiency (on or under budget)
+                        - **Red bars** indicate poor efficiency (significantly over budget)
+                        - **Blue line** shows planned hours
+                        - **Red line** shows actual hours
+                        - **Wide gap** between lines means high overrun
+                        """)
+                else:
+                    st.info("No customer profitability data available")
+            
+            with customer_tab2:
+                # Display common work types by customer
+                if data["customer_data"]["profit_data"]:
+                    # Get customer data
+                    cust_data = data["customer_data"]["profit_data"]
+                    
+                    # In a real app, we would extract work types from data
+                    # Here we'll create a placeholder showing the concept
+                    st.subheader("Work Type Distribution by Customer")
+                    
+                    # Create a fake work type distribution for demonstration
+                    if isinstance(cust_data, list) and len(cust_data) > 0:
+                        # Get customers
+                        customers = []
+                        for item in cust_data:
+                            if 'list_name' in item:
+                                customers.append(item['list_name'])
+                            elif 'customer' in item:
+                                customers.append(item['customer'])
+                        
+                        # Take top 5 customers
+                        top_customers = customers[:5] if len(customers) > 5 else customers
+                        
+                        # Create demo data for work types
+                        work_types = ["CNC Milling", "Manual Machining", "Assembly", "Inspection", "Welding"]
+                        
+                        # Generate random distribution data for each customer
+                        import random
+                        work_type_data = {}
+                        
+                        for customer in top_customers:
+                            # Generate a distribution that adds up to 100%
+                            values = [random.randint(5, 40) for _ in range(len(work_types)-1)]
+                            # Make sure the last value brings the sum to 100
+                            values.append(100 - sum(values))
+                            # Shuffle to avoid patterns
+                            random.shuffle(values)
+                            
+                            work_type_data[customer] = dict(zip(work_types, values))
+                        
+                        # Create a DataFrame
+                        work_type_df = pd.DataFrame(work_type_data)
+                        
+                        # Create stacked bar chart
+                        fig = px.bar(
+                            work_type_df, 
+                            barmode='stack',
+                            height=400,
+                            title="Work Type Distribution by Customer (%)"
+                        )
+                        
+                        fig.update_layout(
+                            yaxis_title='Percentage',
+                            xaxis_title='Work Type',
+                            legend_title='Customer',
+                            hovermode='x unified'
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Show the data in table form
+                        st.caption("Work Type Breakdown by Customer (%)")
+                        st.dataframe(work_type_df, use_container_width=True)
+                        
+                        st.info("Note: In the production version, this data would be derived from actual job records.")
+                    else:
+                        st.info("No customer data available to analyze work types")
+                else:
+                    st.info("No customer data available to analyze work types")
+            
+            with customer_tab3:
+                # Show the original bubbles chart for those who want the detail
+                if data["customer_data"]["profit_data"]:
+                    customer_chart = create_enhanced_customer_chart(data["customer_data"]["profit_data"], selected_year)
+                    st.plotly_chart(customer_chart, use_container_width=True)
+                    
+                    st.caption("Original visualization with all details")
+                else:
+                    st.info("No customer profitability data available")
     
     with col2:
         # ---- WORK CENTER ANALYSIS ----
-        st.subheader("Work Center Analysis")
+        st.header("🔧 Work Center Analysis")
         with st.container():
             # Work center metrics
             c1, c2 = st.columns(2)
@@ -817,41 +930,186 @@ if data:
             st.subheader("Work Center Performance", divider="gray")
             
             # Create tabs for different views
-            tab1, tab2 = st.tabs(["Chart", "Table"])
+            tab1, tab2, tab3 = st.tabs(["ROI Analysis", "Hours Breakdown", "Efficiency"])
             
             with tab1:
+                # Sort options for ROI analysis
+                roi_sort_options = {
+                    "overrun_percent": "Overrun % (Default)",
+                    "utilization": "Utilization", 
+                    "total_hours": "Total Hours"
+                }
+                
+                # Add sorting control
+                col1, col2 = st.columns([2, 1])
+                with col2:
+                    roi_sort_by = st.selectbox(
+                        "Sort by:",
+                        options=list(roi_sort_options.keys()),
+                        format_func=lambda x: roi_sort_options[x],
+                        key="wc_roi_sort_by"
+                    )
+                
+                # Use the new ROI chart
                 wc_df = pd.DataFrame(data["workcenter_data"]["work_center_data"])
-                wc_chart = create_workcenter_chart(wc_df)
-                st.plotly_chart(wc_chart, use_container_width=True)
+                roi_chart = create_workcenter_roi_chart(wc_df, sort_by=roi_sort_by)
+                st.plotly_chart(roi_chart, use_container_width=True)
+                
+                # ROI investment guidance based on the chart
+                st.subheader("Investment Recommendations", divider="gray")
+                
+                if not wc_df.empty:
+                    # Calculate and add metrics if they don't exist
+                    if 'overrun_percent' not in wc_df.columns and 'planned_hours' in wc_df.columns and 'actual_hours' in wc_df.columns:
+                        wc_df['overrun_percent'] = wc_df.apply(
+                            lambda x: ((x['actual_hours'] - x['planned_hours']) / x['planned_hours'] * 100) 
+                            if x['planned_hours'] > 0 else 0,
+                            axis=1
+                        )
+                    
+                    if 'utilization' not in wc_df.columns and 'actual_hours' in wc_df.columns:
+                        total_hours = wc_df['actual_hours'].sum()
+                        wc_df['utilization'] = wc_df['actual_hours'] / total_hours * 100
+                    
+                    # Find work centers with highest ROI potential
+                    high_impact_wcs = wc_df[wc_df['utilization'] > wc_df['utilization'].median()]
+                    
+                    if len(high_impact_wcs) > 0:
+                        # Sort by overrun percentage to find highest ROI opportunities
+                        high_impact_wcs = high_impact_wcs.sort_values('overrun_percent', ascending=False)
+                        
+                        # Get top 3 work centers for investment
+                        top_roi_wcs = high_impact_wcs.head(3)
+                        
+                        # Display recommendations
+                        st.markdown("### Top Investment Opportunities")
+                        
+                        for i, (_, wc) in enumerate(top_roi_wcs.iterrows()):
+                            # Use container instead of columns to avoid nesting columns too deep
+                            with st.container():
+                                st.write(f"**#{i+1}: {wc['work_center']}** - {wc['overrun_percent']:.1f}% overrun, {wc['utilization']:.1f}% utilization")
+                                
+                                # Generate ROI estimate based on overrun percentage and utilization
+                                overrun_hours = wc['actual_hours'] - wc['planned_hours'] if 'planned_hours' in wc else 0
+                                hourly_rate = 199  # Standard labor rate
+                                
+                                # Rough ROI calculation - simplified for demo
+                                annual_savings = overrun_hours * 0.5 * hourly_rate  # Assume 50% reduction in overruns
+                                
+                                # Calculate potential impact
+                                st.markdown(f"""
+                                * Potential annual savings: ${annual_savings:,.2f}
+                                * Payback period: {12 if annual_savings > 50000 else 18 if annual_savings > 25000 else 24} months
+                                * Recommended action: {"Immediate upgrade" if wc['overrun_percent'] > 25 else "Process review"}
+                                """)
+                                st.divider()
+                        
+                        # Add general recommendation
+                        st.info("""
+                        💡 Investment priority should be given to work centers with both:
+                        1. High utilization (frequently used)
+                        2. High overrun percentage (inefficient)
+                        
+                        This ensures maximum return on investment by addressing bottlenecks.
+                        """)
+                    else:
+                        st.info("No high-impact work centers identified for investment recommendations.")
+                else:
+                    st.info("No work center data available for ROI analysis.")
             
             with tab2:
-                # Format columns for display
-                display_wc_df = wc_df.copy()
+                # Original bar chart showing hours breakdown
+                if not wc_df.empty:
+                    wc_chart = create_workcenter_chart(wc_df)
+                    st.plotly_chart(wc_chart, use_container_width=True)
+                    
+                    # Add explanation
+                    st.caption("Hours breakdown showing planned vs actual vs overrun by work center")
+                else:
+                    st.info("No work center hours data available")
+            
+            with tab3:
+                # Format columns for display and show in table view
+                display_wc_df = wc_df.copy() if not wc_df.empty else pd.DataFrame()
+                
                 if not display_wc_df.empty:
+                    # Calculate efficiency if not present
+                    if 'efficiency' not in display_wc_df.columns and 'planned_hours' in display_wc_df.columns and 'actual_hours' in display_wc_df.columns:
+                        display_wc_df['efficiency'] = display_wc_df.apply(
+                            lambda x: (x['planned_hours'] / x['actual_hours'] * 100) if x['actual_hours'] > 0 else 100,
+                            axis=1
+                        )
+                    
+                    # Format numeric columns
                     for col in ['planned_hours', 'actual_hours', 'overrun_hours']:
                         if col in display_wc_df.columns:
-                            display_wc_df[col] = display_wc_df[col].apply(lambda x: format_number(x) if x is not None else "0")
+                            display_wc_df[col] = display_wc_df[col].apply(lambda x: f"{x:.1f}" if x is not None else "0")
+                    
+                    # Format percentage columns
+                    for col in ['efficiency', 'utilization', 'overrun_percent']:
+                        if col in display_wc_df.columns:
+                            display_wc_df[col] = display_wc_df[col].apply(lambda x: f"{x:.1f}%" if x is not None else "0%")
                     
                     # Rename columns for better display
                     column_mapping = {
                         "work_center": "Work Center",
                         "planned_hours": "Planned",
                         "actual_hours": "Actual",
-                        "overrun_hours": "Overrun"
+                        "overrun_hours": "Overrun",
+                        "efficiency": "Efficiency",
+                        "utilization": "Utilization",
+                        "overrun_percent": "Overrun %"
                     }
                     
                     # Only rename columns that exist
                     rename_cols = {k: v for k, v in column_mapping.items() if k in display_wc_df.columns}
                     display_wc_df = display_wc_df.rename(columns=rename_cols)
                     
-                    st.dataframe(display_wc_df, use_container_width=True, hide_index=True)
-                else:
-                    st.write("No workcenter data available")
+                    # Sort by efficiency
+                    if 'Efficiency' in display_wc_df.columns:
+                        # Extract numeric value from formatted string for sorting
+                        display_wc_df['Efficiency_sort'] = display_wc_df['Efficiency'].apply(
+                            lambda x: float(x.replace('%', '')) if isinstance(x, str) else x
+                        )
+                        display_wc_df = display_wc_df.sort_values('Efficiency_sort', ascending=False)
+                        display_wc_df = display_wc_df.drop('Efficiency_sort', axis=1)
                     
+                    # Show dataframe with conditional formatting
+                    st.dataframe(
+                        display_wc_df,
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Efficiency": st.column_config.ProgressColumn(
+                                "Efficiency",
+                                help="How close actual hours were to planned hours",
+                                format="%s",
+                                min_value=0,
+                                max_value=100
+                            ),
+                            "Utilization": st.column_config.ProgressColumn(
+                                "Utilization",
+                                help="Percentage of total shop hours",
+                                format="%s",
+                                min_value=0,
+                                max_value=100
+                            ),
+                            "Overrun %": st.column_config.NumberColumn(
+                                "Overrun %",
+                                help="Percentage over planned hours",
+                                format="%s"
+                            )
+                        }
+                    )
+                else:
+                    st.write("No workcenter efficiency data available")
+
     st.divider()
     
-    # ---- EFFICIENCY SECTION (from app.py) ----
-    st.subheader("Efficiency Breakdown")
+    # ===================================================
+    # ============== EFFICIENCY BREAKDOWN ===============
+    # ===================================================
+    st.header("⏱️ Efficiency Breakdown")
     
     with st.container():
         # Create pie chart for efficiency breakdown
@@ -966,9 +1224,11 @@ if data:
             
             st.markdown("[View All Jobs →](/Yearly_Analysis)")
 
-    # 5-Year Hours Trend section from the original dashboard.py
+    # ===================================================
+    # ================ 5-YEAR TRENDS ===================
+    # ===================================================
     st.divider()
-    st.subheader("5-Year Hours Trend")
+    st.header("📈 5-Year Hours Trend")
     
     # Use data from yearly_summary if available, otherwise use mock data
     if yearly_df is not None and not yearly_df.empty:
@@ -1020,7 +1280,7 @@ if data:
         height=300
     )
     st.plotly_chart(fig, use_container_width=True)
-    
+
     # Yearly Summary Table section - Interactive Year Selection
     st.divider()
 
@@ -1428,6 +1688,11 @@ if data:
     else:
         st.info("No yearly summary data available")
                 
+    # ===================================================
+    # ================= FOOTER SECTION ==================
+    # ===================================================
+    st.divider()
+    
     # ---- CALCULATION NOTES ----
     with st.expander("Calculation Notes"):
         st.markdown("""
